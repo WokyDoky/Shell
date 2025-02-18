@@ -110,6 +110,7 @@ def main():
         # Interactive mode
         while True:
             try:
+                print("\033[A\033[K", end="")
                 cmd = input("Enter a command: ").strip()
                 process_command(cmd)
             except EOFError:
