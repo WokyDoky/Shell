@@ -38,6 +38,19 @@ def process_command(cmd, background=False):
     if background:
         cmd = cmd[:-1].strip()  # Remove '&' from the command
 
+    input_file = None
+    output_file = None
+
+    if '<' in cmd:
+        parts = cmd.split('<')
+        cmd = parts[0].strip()
+        input_file = parts[1].strip()
+
+    if '>' in cmd:
+        parts = cmd.split('>')
+        cmd = parts[0].strip()
+        output_file = parts[1].strip()
+
     # Split commands by pipes
     commands = cmd.split("|")
     if not commands:
@@ -67,6 +80,17 @@ def process_command(cmd, background=False):
                     os.close(pipe_read)
                     os.close(pipe_write)
 
+                if input_file and i == 0:
+                    fd = os.open(input_file, os.O_RDONLY)
+                    os.dup2(fd, 0)
+                    os.close(fd)
+
+                    # Handle output redirection
+                if output_file and i == len(commands) - 1:
+                    fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+                    os.dup2(fd, 1)
+                    os.close(fd)
+
                 executable = f"/usr/bin/{args[0]}"
                 os.execv(executable, args)
             except FileNotFoundError:
@@ -92,7 +116,10 @@ def process_command(cmd, background=False):
     print()
 
 def main():
-    # Check if a file is specified as a command-line argument
+    # More detail about how everything runs in the readme.
+
+    # How to run a script file:
+    #   python3 shell.py sampleShellFile.txt
     if len(sys.argv) > 1:
         try:
             with open(sys.argv[1], 'r') as file:
