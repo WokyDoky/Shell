@@ -54,8 +54,9 @@ class MiniShell:
                     print(f"Directory not found: {cmd_parts['args'][1]}")
             return
         elif cmd == 'inspiration':
-            phrase = os.environ.get('phrase', 'No inspiration set!')
-            print(phrase)
+            if 'phrase' not in os.environ:
+                os.environ['INSPIRATION'] = 'Dream big'
+            print(os.environ['INSPIRATION'])
             return
 
         # Check if command exists in /bin or current directory
