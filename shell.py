@@ -1,6 +1,35 @@
 import os
 import sys
 
+def split_command(command):
+    """Manually split a command into arguments, preserving quoted strings."""
+    args = []
+    current_arg = ""
+    in_quotes = False
+    quote_char = None
+
+    for char in command:
+        if char in ('"', "'"):
+            if in_quotes and char == quote_char:
+                in_quotes = False
+                quote_char = None
+            elif not in_quotes:
+                in_quotes = True
+                quote_char = char
+            else:
+                current_arg += char
+        elif char.isspace() and not in_quotes:
+            if current_arg:
+                args.append(current_arg)
+                current_arg = ""
+        else:
+            current_arg += char
+
+    if current_arg:
+        args.append(current_arg)
+
+    return args
+
 def process_command(cmd, background=False):
     if not cmd.strip() or cmd.strip().startswith('#'):
         return
@@ -33,6 +62,7 @@ def process_command(cmd, background=False):
         except Exception as e:
             print(f"Error changing directory: {e}")
             return
+
     # Check if the command should run in the background
     background = cmd.endswith("&")
     if background:
@@ -60,7 +90,8 @@ def process_command(cmd, background=False):
     input_fd = None
 
     for i, command in enumerate(commands):
-        args = command.strip().split()
+        # Use custom split_command function to handle quoted strings
+        args = split_command(command.strip())
         if not args:
             continue
 
@@ -85,7 +116,7 @@ def process_command(cmd, background=False):
                     os.dup2(fd, 0)
                     os.close(fd)
 
-                    # Handle output redirection
+                # Handle output redirection
                 if output_file and i == len(commands) - 1:
                     fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
                     os.dup2(fd, 1)
@@ -116,10 +147,6 @@ def process_command(cmd, background=False):
     print()
 
 def main():
-    # More detail about how everything runs in the readme.
-
-    # How to run a script file:
-    #   python3 shell.py sampleShellFile.txt
     if len(sys.argv) > 1:
         try:
             with open(sys.argv[1], 'r') as file:
